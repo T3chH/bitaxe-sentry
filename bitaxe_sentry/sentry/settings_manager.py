@@ -25,6 +25,8 @@ DEFAULT_SETTINGS = {
     "DISCORD_WEBHOOK_URL": "",
     "NTFY_TOPIC": "",
     "NTFY_SERVER": "https://ntfy.sh",
+    "TELEGRAM_BOT_TOKEN": "",
+    "TELEGRAM_CHAT_ID": "",
 }
 
 def ensure_data_dir():
@@ -63,6 +65,8 @@ def load_settings():
             settings["TEMP_VR_MAX"] = float(settings.get("TEMP_VR_MAX", DEFAULT_SETTINGS["TEMP_VR_MAX"]))
             settings["NTFY_TOPIC"] = str(settings.get("NTFY_TOPIC", ""))
             settings["NTFY_SERVER"] = str(settings.get("NTFY_SERVER", DEFAULT_SETTINGS["NTFY_SERVER"]))
+            settings["TELEGRAM_BOT_TOKEN"] = str(settings.get("TELEGRAM_BOT_TOKEN", ""))
+            settings["TELEGRAM_CHAT_ID"] = str(settings.get("TELEGRAM_CHAT_ID", ""))
             
             latency_consecutive = settings.get("LATENCY_CONSECUTIVE_COUNT", DEFAULT_SETTINGS["LATENCY_CONSECUTIVE_COUNT"])
             try:
@@ -113,6 +117,8 @@ def save_settings(settings_dict):
         settings_dict["TEMP_VR_MAX"] = float(settings_dict.get("TEMP_VR_MAX", DEFAULT_SETTINGS["TEMP_VR_MAX"]))
         settings_dict["NTFY_TOPIC"] = str(settings_dict.get("NTFY_TOPIC", ""))
         settings_dict["NTFY_SERVER"] = str(settings_dict.get("NTFY_SERVER", DEFAULT_SETTINGS["NTFY_SERVER"]))
+        settings_dict["TELEGRAM_BOT_TOKEN"] = str(settings_dict.get("TELEGRAM_BOT_TOKEN", ""))
+        settings_dict["TELEGRAM_CHAT_ID"] = str(settings_dict.get("TELEGRAM_CHAT_ID", ""))
         
         latency_consecutive = settings_dict.get("LATENCY_CONSECUTIVE_COUNT", DEFAULT_SETTINGS["LATENCY_CONSECUTIVE_COUNT"])
         try:
