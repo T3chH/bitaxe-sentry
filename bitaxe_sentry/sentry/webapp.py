@@ -73,6 +73,66 @@ async def apple_touch_icon():
         return FileResponse(icon_path)
     return FileResponse(static_path / "logo.png")
 
+# Export and analytics API
+@app.get("/api/export.csv")
+def export_csv_api(miner_id: Optional[int] = None, start: Optional[str] = None, end: Optional[str] = None):
+    from .analytics import export_csv, _parse_dt
+    try:
+        payload = export_csv(miner_id, _parse_dt(start), _parse_dt(end))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    filename = "bitaxe-sentry.csv"
+    return Response(content=payload, media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
+@app.get("/api/export.json")
+def export_json_api(miner_id: Optional[int] = None, start: Optional[str] = None, end: Optional[str] = None):
+    from .analytics import export_json, _parse_dt
+    try:
+        payload = export_json(miner_id, _parse_dt(start), _parse_dt(end))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return Response(content=payload, media_type="application/json", headers={"Content-Disposition": 'attachment; filename="bitaxe-sentry.json"'})
+
+
+@app.get("/api/summary")
+def summary_api(miner_id: Optional[int] = None, period: str = "24h"):
+    from .analytics import summary
+    hours = {"24h": 24, "7d": 24*7, "30d": 24*30}.get(period)
+    if hours is None:
+        raise HTTPException(status_code=400, detail="period must be 24h, 7d or 30d")
+    return summary(miner_id, hours)
+
+
+@app.get("/api/miners/{miner_id}/events")
+def miner_events(miner_id: int, limit: int = Query(100, ge=1, le=1000), session: Session = Depends(get_session)):
+    events = session.exec(select(MinerEvent).where(MinerEvent.miner_id == miner_id).order_by(MinerEvent.timestamp.desc()).limit(limit)).all()
+    return events
+
+
+class TagsRequest(BaseModel):
+    tags: List[str]
+
+
+@app.get("/api/miners/{miner_id}/tags")
+def get_tags(miner_id: int, session: Session = Depends(get_session)):
+    return [x.tag for x in session.exec(select(MinerTag).where(MinerTag.miner_id == miner_id)).all()]
+
+
+@app.put("/api/miners/{miner_id}/tags")
+def set_tags(miner_id: int, req: TagsRequest, session: Session = Depends(get_session)):
+    miner = session.get(Miner, miner_id)
+    if not miner:
+        raise HTTPException(status_code=404, detail="Miner not found")
+    existing = session.exec(select(MinerTag).where(MinerTag.miner_id == miner_id)).all()
+    for tag in existing:
+        session.delete(tag)
+    for value in sorted(set(t.strip() for t in req.tags if t.strip())):
+        session.add(MinerTag(miner_id=miner_id, tag=value[:64]))
+    session.commit()
+    return get_tags(miner_id, session)
+
+
 # Stats for dashboard
 @app.get("/")
 def dashboard(request: Request, success: Optional[str] = None, error: Optional[str] = None, session: Session = Depends(get_session)):
