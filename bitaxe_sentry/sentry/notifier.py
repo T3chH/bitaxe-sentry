@@ -158,7 +158,28 @@ def _notify(content: str, title: str = "Bitaxe Sentry", priority: str = "default
     """Deliver to all configured channels (Discord + ntfy)."""
     discord_ok = _send_discord(content)
     ntfy_ok = _send_ntfy(title, content, priority)
-    return discord_ok or ntfy_ok
+    telegram_ok = _send_telegram(content)
+    return discord_ok or ntfy_ok or telegram_ok
+
+
+def _send_telegram(content: str) -> bool:
+    from .settings_manager import load_settings
+    settings = load_settings()
+    token = settings.get("TELEGRAM_BOT_TOKEN", "")
+    chat_id = settings.get("TELEGRAM_CHAT_ID", "")
+    if not token or not chat_id:
+        return False
+    try:
+        resp = requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={"chat_id": chat_id, "text": content},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return True
+    except Exception as e:
+        logger.error(f"Telegram delivery failed: {e}")
+        return False
 
 
 # ── Public alert functions ────────────────────────────────────────────────────
