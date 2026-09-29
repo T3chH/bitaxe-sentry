@@ -27,6 +27,8 @@ class Miner(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     name: str
     endpoint: str
+    last_seen: Optional[datetime.datetime] = Field(default=None, nullable=True)
+    last_boot_id: Optional[str] = Field(default=None, nullable=True)
     added_at: datetime.datetime = Field(default_factory=datetime.datetime.utcnow)
 
 
