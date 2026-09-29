@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from sqlmodel import Session, select
 from .config import ENDPOINTS, TEMP_MAX, TEMP_MIN, TEMP_VR_MAX, VOLT_MIN, LATENCY_MAX_THRESHOLD, LATENCY_CONSECUTIVE_COUNT, reload_config
 from .db import engine, Miner, Reading
+from .analytics import add_event
 from .notifier import (
     send_temperature_alert, send_voltage_alert, send_diff_alert,
     send_miner_offline_alert, send_latency_alert, send_pool_failover_alert,
@@ -126,6 +127,8 @@ def poll_once():
                 if miner:
                     count = consecutive_offline_failures.get(miner.id, 0) + 1
                     consecutive_offline_failures[miner.id] = count
+                    if count == 1:
+                        add_event(miner.id, "OFFLINE", f"Poll failed: {result['error']}")
                     logger.warning(
                         f"Miner {miner.name} offline (consecutive: {count})"
                     )
@@ -145,7 +148,10 @@ def poll_once():
                 session.add(miner)
                 session.commit()
                 session.refresh(miner)
+                add_event(miner.id, "ONLINE", "Miner discovered and came online")
 
+            if consecutive_offline_failures.get(miner.id, 0) > 0:
+                add_event(miner.id, "ONLINE", "Miner recovered after polling failure")
             consecutive_offline_failures[miner.id] = 0
 
             data = result['data']
