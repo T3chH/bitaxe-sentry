@@ -30,6 +30,22 @@ class Miner(SQLModel, table=True):
     added_at: datetime.datetime = Field(default_factory=datetime.datetime.utcnow)
 
 
+class MinerTag(SQLModel, table=True):
+    id: int = Field(default=None, primary_key=True)
+    miner_id: int = Field(foreign_key="miner.id", index=True)
+    tag: str = Field(index=True)
+    created_at: datetime.datetime = Field(default_factory=datetime.datetime.utcnow)
+
+
+class MinerEvent(SQLModel, table=True):
+    id: int = Field(default=None, primary_key=True)
+    miner_id: int = Field(foreign_key="miner.id", index=True)
+    timestamp: datetime.datetime = Field(default_factory=datetime.datetime.utcnow, index=True)
+    event_type: str = Field(index=True)
+    message: str
+    details_json: Optional[str] = Field(default=None, nullable=True)
+
+
 class Reading(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     miner_id: int = Field(foreign_key="miner.id")
